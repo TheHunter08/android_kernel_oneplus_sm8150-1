@@ -336,8 +336,8 @@ quick_select_fast:
 }
 
 #ifdef CONFIG_ANDROID_LMK_ADJ_RBTREE
-DEFINE_SPINLOCK(lmk_lock);
-struct rb_root tasks_scoreadj = RB_ROOT;
+static DEFINE_SPINLOCK(lmk_lock);
+static struct rb_root tasks_scoreadj = RB_ROOT;
 /*
  * Makesure to invoke the function with holding sighand->siglock
  */
