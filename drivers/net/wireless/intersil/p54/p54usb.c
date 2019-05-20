@@ -911,10 +911,10 @@ err_stop:
 	p54u_stop(dev);
 
 err_out:
-	/*
-	 * p54u_disconnect will do the rest of the
-	 * cleanup
-	 */
+
+	/* p54u_disconnect will do the rest of the */
+	/* cleanup */
+
 	return ret;
 }
 
@@ -935,10 +935,10 @@ static void p54u_load_firmware_cb(const struct firmware *firmware,
 	}
 
 	complete(&priv->fw_wait_load);
-	/*
-	 * At this point p54u_disconnect may have already freed
-	 * the "priv" context. Do not use it anymore!
-	 */
+
+	 /* At this point p54u_disconnect may have already freed */
+	 /* the "priv" context. Do not use it anymore! */
+
 	priv = NULL;
 
 	if (err) {
