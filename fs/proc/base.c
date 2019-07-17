@@ -1059,14 +1059,9 @@ static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 		}
 	}
 
-	/* CONFIG_MEMPLUS add start by bin.zhong@ATSI */
-	memplus_state_check(legacy, oom_adj, task, 0, 0);
-	/* add end */
-
+	delete_from_adj_tree(task);
 	task->signal->oom_score_adj = oom_adj;
-#ifdef CONFIG_ADJ_CHAIN
-	adj_chain_update_oom_score_adj(task);
-#endif
+	add_2_adj_tree(task);
 	if (!legacy && has_capability_noaudit(current, CAP_SYS_RESOURCE))
 		task->signal->oom_score_adj_min = (short)oom_adj;
 	trace_oom_score_adj_update(task);
@@ -1088,10 +1083,9 @@ static int __set_oom_adj(struct file *file, int oom_adj, bool legacy)
 			need_update_oom_score_adj = 0;
 #endif
 			if (!p->vfork_done && process_shares_mm(p, mm)) {
+				delete_from_adj_tree(task);
 				p->signal->oom_score_adj = oom_adj;
-#ifdef CONFIG_ADJ_CHAIN
-				need_update_oom_score_adj = 1;
-#endif
+				add_2_adj_tree(task);
 				if (!legacy && has_capability_noaudit(current, CAP_SYS_RESOURCE))
 					p->signal->oom_score_adj_min = (short)oom_adj;
 			}
