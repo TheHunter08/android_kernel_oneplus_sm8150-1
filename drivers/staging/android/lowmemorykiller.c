@@ -73,12 +73,6 @@ static int lowmem_per_minfree_count[6];
 
 static unsigned long lowmem_deathpending_timeout;
 
-/*  bin.zhong@ASTI add for CONFIG_SMART_BOOST */
-unsigned long get_max_minfree(void)
-{
-	return (unsigned long)lowmem_minfree[lowmem_minfree_size - 1];
-}
-
 #define lowmem_print(level, x...)			\
 	do {						\
 		if (lowmem_debug_level >= (level))	\
@@ -138,21 +132,12 @@ static unsigned long lowmem_scan(struct shrinker *s, struct shrink_control *sc)
 		     sc->nr_to_scan, sc->gfp_mask, other_free,
 		     other_file, min_score_adj);
 
-#ifdef CONFIG_ADJ_CHAIN
-	if (unlikely(selftest_running)) {
-		min_score_adj = selftest_min_score_adj;
-		goto selftest_bypass;
-	}
-#endif
 	if (min_score_adj == OOM_SCORE_ADJ_MAX + 1) {
 		lowmem_print(5, "lowmem_scan %lu, %x, return 0\n",
 			     sc->nr_to_scan, sc->gfp_mask);
 		return 0;
 	}
 
-#ifdef CONFIG_ADJ_CHAIN
-selftest_bypass:
-#endif
 	selected_oom_score_adj = min_score_adj;
 
 	rcu_read_lock();
@@ -165,10 +150,6 @@ selftest_bypass:
 #endif
 		struct task_struct *p;
 		short oom_score_adj;
-#ifdef CONFIG_ADJ_CHAIN
-		/* record for scan cnt */
-		++bkws[0].scan;
-#endif
 
 		if (tsk->flags & PF_KTHREAD)
 			continue;
@@ -209,102 +190,6 @@ selftest_bypass:
 		lowmem_print(2, "select '%s' (%d), adj %hd, size %d, to kill\n",
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
-#ifdef CONFIG_ADJ_CHAIN
-	/* adj chain diagnose */
-	if (!selected) {
-		/* which is good because it expected result */
-		mt = LMK_BOTH_MISSED;
-	} else {
-		struct list_head *h;
-		struct task_struct *tsk;
-		bool found = false;
-
-		if (!quick_select_enable)
-			goto bypass_diagnose;
-
-		mt = LMK_ADJ_CHAIN_MISSED;
-
-		lowmem_print(3, "missing task '%s' (%d) adj %hd, adj_chain_status(%d), size %d, "
-				"missed from adj chain, run diagnose\n",
-				selected->comm,
-				selected->pid,
-				selected_oom_score_adj,
-				selected->adj_chain_status,
-				selected_tasksize);
-
-		if (!found) {
-			if (selected->adj_chain_status) {
-				lowmem_print(3,
-					"missing task adj_chain_status(%d), under updating, "
-					"should be reattach to adj chain %hd later, don't worry!\n",
-					selected->adj_chain_status,
-					selected_oom_score_adj);
-				found = true;
-				mt = LMK_NOTHING_MISSED;
-			}
-		}
-
-		if (!found) {
-			list_for_each(h, &adj_chain[__adjc(selected_oom_score_adj)]) {
-				tsk = get_task_struct_adj_chain_rcu(h);
-				if (tsk == selected) {
-					lowmem_print(3,
-								"missing task exists in other adj chain\n");
-					found = true;
-					mt = LMK_NOTHING_MISSED;
-					break;
-				}
-			}
-		}
-
-		if (!found) {
-		/* worst case to search each adj chain for missing task */
-			int cur_high = __adjc(1000);
-
-			lowmem_print(3,
-					"missing task not exists adj chain,search for all adj chain\n");
-			for (; cur_high >= 0; --cur_high) {
-				if (!list_empty(&adj_chain[cur_high])) {
-					list_for_each(h, &adj_chain[cur_high]) {
-						tsk = get_task_struct_adj_chain_rcu(h);
-						if (tsk == selected) {
-							lowmem_print(3,
-									"missing task finally found with in adj chain %d\n",
-									__adjr(cur_high));
-							found = true;
-							mt = LMK_NOTHING_MISSED;
-							break;
-						}
-					}
-				}
-				if (found)
-					break;
-			}
-		}
-
-		/* missing someone ... oops */
-		if (!found) {
-			lowmem_print(1, "missing task '%s' (%d) adj %hd, adj_chain_status(%d)\n",
-					selected->comm, selected->pid, selected_oom_score_adj,
-					selected->adj_chain_status);
-		}
-
-		/* leave selected task NULL for further debugging */
-		selected = NULL;
-	}
-
-bypass_diagnose:
-	/* record missing task analysis result */
-	bkws[0].missed = mt;
-
-quick_select_fast:
-	/* marker for select end */
-	time_measure_marker(MEASURE_END_MARKER, selected, bkws);
-
-	if (batch_kill_enable && !batch_kill_empty(bkws))
-		return lowmem_batch_kill(bkws, sc, minfree, other_file,
-						other_free, min_score_adj);
-#endif
 	if (selected) {
 		long cache_size = other_file * (long)(PAGE_SIZE / 1024);
 		long cache_limit = minfree * (long)(PAGE_SIZE / 1024);
@@ -541,41 +426,3 @@ module_param_array_named(lmk_count, lowmem_per_minfree_count, uint, NULL,
 			 S_IRUGO);
 module_param_named(debug_level, lowmem_debug_level, uint, 0644);
 
-#ifdef CONFIG_ADJ_CHAIN
-static int selftest_store(const char *buf, const struct kernel_param *kp)
-{
-	unsigned int val;
-	unsigned int min_score_adj = 900;
-	long freeable;
-	struct shrink_control sc = {
-		.gfp_mask = GFP_KERNEL,
-		.nid = 0,
-		.memcg = NULL,
-	};
-
-	if (sscanf(buf, "%u %u\n", &val, &min_score_adj) <= 0)
-		return -EINVAL;
-
-	if (val < 1 || val > BATCH_KILL_MAX_CNT || min_score_adj < 352 || min_score_adj > 1000) {
-		lowmem_print(1, "selftest EINVAL\n");
-		return -EINVAL;
-	}
-
-	batch_kill_cnt = val;
-	selftest_min_score_adj = min_score_adj;
-	selftest_running = true;
-	freeable = lowmem_count(NULL, NULL);
-	if (freeable) {
-		lowmem_print(1, "selftest set batch kill cnt to %u, min_score_adj %d\n", val, min_score_adj);
-		lowmem_scan(NULL, &sc);
-	}
-	batch_kill_cnt = 1;
-	selftest_running = false;
-	return 0;
-}
-
-static struct kernel_param_ops selftest_ops = {
-	.set = selftest_store,
-};
-module_param_cb(selftest, &selftest_ops, NULL, 0200);
-#endif
