@@ -139,7 +139,6 @@ static int max_swappiness = 200;
 static int two_million = 2000000;
 #endif
 
-static int max_swappiness = 200;
 
 /*dylanchang, 2019/4/30, add foreground task io opt*/
 unsigned int sysctl_fg_io_opt = 1;
