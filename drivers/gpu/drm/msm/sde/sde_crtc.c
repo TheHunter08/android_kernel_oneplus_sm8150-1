@@ -5778,14 +5778,20 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 			fppressed_index = i;
 			fppressed_index_rt = i;
 		}
-                if (mode ==3)
-                    aod_index = i;
+        if (mode ==3)
+            aod_index = i;
 	}
 
-	if(fp_index >=0 && dim_mode!=0)
+	if (fp_mode == 1) {
 		display->panel->dim_status = true;
-	else
+		cstate->fingerprint_pressed = true;
+		return 0;
+	} else {
 		display->panel->dim_status = false;
+		cstate->fingerprint_pressed = false;
+		cstate->fingerprint_dim_layer = NULL;
+		return 0;
+	}
 
 	if(aod_index <0){
 		oneplus_aod_hid = 0;
