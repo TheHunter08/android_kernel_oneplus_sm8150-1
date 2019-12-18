@@ -104,7 +104,6 @@ fi
 # end ramdisk changes
     
 	ui_print " "; ui_print "Flashing Revolution_Kernel. Have a good day!";
-	ui_print " "; ui_print "Please make sure to always run the latest companion magisk module!";
 
 
 write_boot;
