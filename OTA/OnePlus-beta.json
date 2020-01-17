@@ -1,6 +1,6 @@
 {
   "kernel": {
-    "name": "Revolution Kernel BETA FOR OP7/T/PRO",
+    "name": "Revolution Kernel FOR OP7/T/PRO",
     "version": "R1-T1",
     "link": "https://github.com/Patrontrox/Kernel-Images/releases/download/V1-test-guacamole/Revolution_Kernel-20200117-guacamole-test-clang.zip",
     "changelog_url": "https://raw.githubusercontent.com/SKULSHADY/android_kernel_oneplus_sm8150/caf/OTA/changelog-beta",
