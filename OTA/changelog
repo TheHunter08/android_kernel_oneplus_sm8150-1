@@ -1,0 +1,11 @@
+- Fixed random reboot with wireguard
+- Linux 4.14.165
+- Fixed stucked cores caused by oneplus_brain_service
+- Merged caf tag 'LA.UM.8.1.r1-13000-sm8150.0'
+- Improved Fingerprint unlock
+- Removed some debugs
+- Merged F2FS Stable
+- Synced latest OOS Kernel changes
+- Improved Pelt
+- Added FKM OTA support
+- More optimizations...
