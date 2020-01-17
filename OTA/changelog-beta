@@ -8,5 +8,12 @@
 - Merged F2FS Stable
 - Synced latest OOS Kernel changes
 - Improved Pelt
+- Imported lmk from 4.9 and imported rbtree changes from motorola
+- Added bogus mmc
+- Adapted vnswap to 4.14
+- Zswap/zsmalloc improvements
+- Merged samsung mm hacks
+- Enabled frontswap, zswap, zpool, vnswap
+- Enabled controllers support
 - Added FKM OTA support
 - More optimizations...
