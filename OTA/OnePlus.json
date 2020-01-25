@@ -1,11 +1,11 @@
 {
   "kernel": {
-    "name": "Revolution Kernel FOR OP7/T/PRO",
+    "name": "Revolution Kernel FOR OP7 Pro",
     "version": "R1-STABLE",
-    "link": "https://github.com/Patrontrox/Kernel-Images/releases/download/V1-test-guacamole/Revolution_Kernel-20200117-guacamole-test-clang.zip",
+    "link": "https://github.com/Patrontrox/Kernel-Images/releases/download/V1-guacamole/Revolution_Kernel-20200125-guacamole-clang-Stable.zip",
     "changelog_url": "https://raw.githubusercontent.com/SKULSHADY/android_kernel_oneplus_sm8150/caf/OTA/changelog",
-    "date": "2020-01-17",
-    "sha1": "3601f5bed23fc9d98448cfce136153da7955c827"
+    "date": "2020-01-25",
+    "sha1": "812dfbda6cfeb0393af83de8fb4ea95fe740219e"
   },
   "support": {
     "link": "https://t.me/Revolution_Kernel"

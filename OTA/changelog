@@ -1,11 +1,27 @@
-- Fixed random reboot with wireguard
-- Linux 4.14.165
-- Fixed stucked cores caused by oneplus_brain_service
-- Merged caf tag 'LA.UM.8.1.r1-13000-sm8150.0'
-- Improved Fingerprint unlock
-- Removed some debugs
+- Changelog for OnePlus 7 Pro:
+
+- Initial build
+- Linux 4.14.167
+- Merged CAF tag 'LA.UM.8.1.r1-13000-sm8150.0'
 - Merged F2FS Stable
-- Synced latest OOS Kernel changes
-- Improved Pelt
-- Added FKM OTA support
-- More optimizations...
+- Magisk doesn't need to be flashed after the Kernel anymore
+- Synced with latest OnePlus Kernel changes
+- Compatible with AOSP ROMs like Havoc, bliss....
+- Compatible with OOS
+- Built with Clang 10
+- Fixed stucked freqs related to oneplus brain service
+- Switched to exFAT from arter97
+- Enabled ULPS and partial updates
+- WireGuard support
+- Pelt is present in this Kernel
+- Fsync on/off support
+- Ported LMK from 4.9 (By arter97)
+- Improved FOD and fixed Flickering on AOSP ROMs
+- Improved Fingerprint speed
+- Added sound control for headphones
+- KCAL support
+- KLAPSE suport
+- Backlight MAX/MIN brightness support
+- Vibration control
+- BBR TCP algorithm by default
+- Touchboost is present (Can be disabled with a Kernel Manager)
