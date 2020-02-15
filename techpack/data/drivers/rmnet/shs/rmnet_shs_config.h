@@ -1,4 +1,4 @@
-/* Copyright (c) 2018-2019 The Linux Foundation. All rights reserved.
+/* Copyright (c) 2018-2020 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -42,6 +42,11 @@ enum rmnet_shs_crit_err_e {
 	RMNET_SHS_CPU_PKTLEN_ERR,
 	RMNET_SHS_NULL_SKB_HEAD,
 	RMNET_SHS_RPS_MASK_CHANGE,
+	RMNET_SHS_WQ_INVALID_CPU_ERR,
+	RMNET_SHS_WQ_INVALID_PTR_ERR,
+	RMNET_SHS_WQ_NODE_MALLOC_ERR,
+	RMNET_SHS_WQ_NL_SOCKET_ERR,
+	RMNET_SHS_CPU_FLOWS_BNDS_ERR,
 	RMNET_SHS_CRIT_ERR_MAX
 };
 
