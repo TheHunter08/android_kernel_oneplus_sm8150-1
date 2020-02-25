@@ -106,6 +106,7 @@ struct pl_data {
 	int			taper_entry_fv;
 	int			main_fcc_max;
 	u32			float_voltage_uv;
+	enum power_supply_type	charger_type;
 	/* debugfs directory */
 	struct dentry		*dfs_root;
 
@@ -197,6 +198,31 @@ static int cp_get_parallel_mode(struct pl_data *chip, int mode)
 	return pval.intval;
 }
 
+static int get_hvdcp3_icl_limit(struct pl_data *chip)
+{
+	int main_icl, target_icl = -EINVAL;
+
+	if (chip->charger_type != POWER_SUPPLY_TYPE_USB_HVDCP_3)
+		return target_icl;
+
+	/*
+	 * For HVDCP3 adapters, limit max. ILIM as follows:
+	 * HVDCP3_ICL: Maximum ICL of HVDCP3 adapter(from DT configuration)
+	 * For Parallel input configurations:
+	 * VBUS: target_icl = HVDCP3_ICL - main_ICL
+	 * VMID: target_icl = HVDCP3_ICL
+	 */
+	target_icl = chip->chg_param->hvdcp3_max_icl_ua;
+	if (cp_get_parallel_mode(chip, PARALLEL_INPUT_MODE)
+					== POWER_SUPPLY_PL_USBIN_USBIN) {
+		main_icl = get_effective_result_locked(chip->usb_icl_votable);
+		if ((main_icl >= 0) && (main_icl < target_icl))
+			target_icl -= main_icl;
+	}
+
+	return target_icl;
+}
+
 /*
  * Adapter CC Mode: ILIM over-ridden explicitly, below takes no effect.
  *
@@ -271,6 +297,16 @@ static void cp_configure_ilim(struct pl_data *chip, const char *voter, int ilim)
 			vote(chip->cp_ilim_votable, voter, true, pval.intval);
 		else
 			vote(chip->cp_ilim_votable, voter, true, ilim);
+
+		/*
+		 * Rerun FCC votable to ensure offset for ILIM compensation is
+		 * recalculated based on new ILIM.
+		 */
+		if (!chip->fcc_main_votable)
+			chip->fcc_main_votable = find_votable("FCC_MAIN");
+		if ((chip->charger_type == POWER_SUPPLY_TYPE_USB_HVDCP_3)
+				&& chip->fcc_main_votable)
+			rerun_election(chip->fcc_main_votable);
 
 		pl_dbg(chip, PR_PARALLEL,
 			"ILIM: vote: %d voter:%s min_ilim=%d fcc = %d\n",
@@ -1790,6 +1826,16 @@ static void handle_usb_change(struct pl_data *chip)
 		vote(chip->pl_disable_votable, PL_TAPER_EARLY_BAD_VOTER,
 				false, 0);
 		vote(chip->pl_disable_votable, ICL_LIMIT_VOTER, false, 0);
+		chip->override_main_fcc_ua = 0;
+		chip->total_fcc_ua = 0;
+		chip->slave_fcc_ua = 0;
+		chip->main_fcc_ua = 0;
+		chip->charger_type = POWER_SUPPLY_TYPE_UNKNOWN;
+	} else {
+		rc = power_supply_get_property(chip->usb_psy,
+				POWER_SUPPLY_PROP_REAL_TYPE, &pval);
+		if (!rc)
+			chip->charger_type = pval.intval;
 	}
 }
 
