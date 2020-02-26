@@ -994,6 +994,9 @@ static void set_hbm_mode(struct work_struct *work)
 	 */
 
 	mutex_lock(&panel->panel_lock);
+    	if (panel->hbm_mode == 5) {
+            level = 1;
+    	}
 	switch (level) {
 	case 0:
 		__dsi_panel_tx_cmd_set(panel, DSI_CMD_SET_HBM_OFF, false);
