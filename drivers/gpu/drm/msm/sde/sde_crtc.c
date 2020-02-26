@@ -5833,7 +5833,7 @@ static int sde_crtc_onscreenfinger_atomic_check(struct sde_crtc_state *cstate,
 		) {
 		op_dimlayer_bl = 0;
 	} else {
-		if (op_dimlayer_bl_enable && !op_dp_enable) {
+		if (op_dimlayer_bl_enabled && !op_dp_enable) {
 			if (display->panel->bl_config.bl_level != 0 &&
 				display->panel->bl_config.bl_level < op_dimlayer_bl_alpha) {
 				dim_backlight = 1;
