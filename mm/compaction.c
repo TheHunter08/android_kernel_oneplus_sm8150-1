@@ -1832,10 +1832,10 @@ enum compact_result try_to_compact_pages(gfp_t gfp_mask, unsigned int order,
 static struct workqueue_struct *compaction_wq;
 static struct delayed_work compaction_work;
 static bool screen_on = true;
-static int compaction_timeout_ms = 900000;
+static int compaction_timeout_ms = 300000;
 module_param_named(compaction_forced_timeout_ms, compaction_timeout_ms, int,
 			0644);
-static int compaction_soff_delay_ms = 3000;
+static int compaction_soff_delay_ms = 1000;
 module_param_named(compaction_screen_off_delay_ms, compaction_soff_delay_ms, int,
 			0644);
 static unsigned long compaction_forced_timeout;
