@@ -61,21 +61,12 @@
 #include <linux/kcov.h>
 #include <linux/random.h>
 #include <linux/rcuwait.h>
-#ifdef CONFIG_ADJ_CHAIN
-#include <linux/oem/adj_chain.h>
-#endif
 #include <linux/compat.h>
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
 #include <asm/pgtable.h>
 #include <asm/mmu_context.h>
-
-// tedlin@ASTI 2019/06/12 add for CONFIG_HOUSTON
-#include <oneplus/houston/houston_helper.h>
-
-// tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
-#include <oneplus/control_center/control_center_helper.h>
 
 static void __unhash_process(struct task_struct *p, bool group_dead)
 {
@@ -85,9 +76,6 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
 		detach_pid(p, PIDTYPE_PGID);
 		detach_pid(p, PIDTYPE_SID);
 
-#ifdef CONFIG_ADJ_CHAIN
-		adj_chain_detach(p);
-#endif
 		list_del_rcu(&p->tasks);
 		list_del_init(&p->sibling);
 		__this_cpu_dec(process_counts);
@@ -197,9 +185,6 @@ void release_task(struct task_struct *p)
 {
 	struct task_struct *leader;
 	int zap_leader;
-
-// tedlin@ASTI 2019/06/12 add for CONFIG_HOUSTON
-	ht_rtg_list_del(p);
 repeat:
 	/* don't need to get the RCU readlock here - the process is dead and
 	 * can't be modifying its own credentials. But shut RCU-lockdep up */
@@ -511,6 +496,7 @@ static void exit_mm(void)
 {
 	struct mm_struct *mm = current->mm;
 	struct core_state *core_state;
+	int mm_released;
 
 	exit_mm_release(current, mm);
 	if (!mm)
@@ -557,13 +543,12 @@ static void exit_mm(void)
 	enter_lazy_tlb(mm, current);
 	task_unlock(current);
 	mm_update_next_owner(mm);
-	mmput(mm);
-#ifdef CONFIG_ANDROID_SIMPLE_LMK
-	clear_thread_flag(TIF_MEMDIE);
-#else
+
+	mm_released = mmput(mm);
 	if (test_thread_flag(TIF_MEMDIE))
 		exit_oom_victim();
-#endif
+	if (mm_released)
+		set_tsk_thread_flag(current, TIF_MM_RELEASED);
 }
 
 static struct task_struct *find_alive_thread(struct task_struct *p)
@@ -732,7 +717,6 @@ static void exit_notify(struct task_struct *tsk, int group_dead)
 	if (group_dead)
 		kill_orphaned_pgrp(tsk->group_leader, NULL);
 
-	tsk->exit_state = EXIT_ZOMBIE;
 	if (unlikely(tsk->ptrace)) {
 		int sig = thread_group_leader(tsk) &&
 				thread_group_empty(tsk) &&
@@ -790,32 +774,6 @@ static void check_stack_usage(void)
 static inline void check_stack_usage(void) {}
 #endif
 
-#ifndef CONFIG_PROFILING
-static BLOCKING_NOTIFIER_HEAD(task_exit_notifier);
-
-int profile_event_register(enum profile_type t, struct notifier_block *n)
-{
-	if (t == PROFILE_TASK_EXIT)
-		return blocking_notifier_chain_register(&task_exit_notifier, n);
-
-	return -ENOSYS;
-}
-
-int profile_event_unregister(enum profile_type t, struct notifier_block *n)
-{
-	if (t == PROFILE_TASK_EXIT)
-		return blocking_notifier_chain_unregister(&task_exit_notifier,
-							  n);
-
-	return -ENOSYS;
-}
-
-void profile_task_exit(struct task_struct *tsk)
-{
-	blocking_notifier_call_chain(&task_exit_notifier, 0, tsk);
-}
-#endif
-
 void __noreturn do_exit(long code)
 {
 	struct task_struct *tsk = current;
@@ -869,7 +827,6 @@ void __noreturn do_exit(long code)
 		preempt_count_set(PREEMPT_ENABLED);
 	}
 
-	/* sync mm's RSS info before statistics gathering */
 	if (tsk->mm)
 		sync_mm_rss(tsk->mm);
 	acct_update_integrals(tsk);
@@ -913,12 +870,6 @@ void __noreturn do_exit(long code)
 	exit_task_namespaces(tsk);
 	exit_task_work(tsk);
 	exit_thread(tsk);
-
-// tedlin@ASTI 2019/06/12 add for CONFIG_CONTROL_CENTER
-	cc_tsk_free((void*) tsk);
-
-// tedlin@ASTI 2019/06/12 add for CONFIG_HOUSTON
-	ht_perf_event_release(tsk);
 
 	/*
 	 * Flush inherited counters to the parent - before the parent
